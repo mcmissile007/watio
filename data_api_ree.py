@@ -59,7 +59,7 @@ class DataAPIRee ():
         return self.__parse_kwh_price_values(kwh_prices_response)
         
 
-    def get_today_kwh_price(self, geo="peninsula") -> None:
+    def today_kwh_price(self, geo="peninsula") -> None:
         print("getting today kwh price...")
         # YYYY-MM-DDTHH:MM ; T means local time
         today = datetime.now().strftime("%Y-%m-%d")
