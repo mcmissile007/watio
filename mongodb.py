@@ -14,14 +14,25 @@ class MongoDB():
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    def insert(self, collection, document)->None:
+    def insert(self, collection:str, document:str)-> bool:
         if self.db != None:
             try:
                 result = self.db[collection].insert_one(document)
+                return True
             except Exception as e:
                 print(f"Error insert_one ticker:{e}")
-                raise e
-            print(f"insert result:{result.inserted_id}")
+        return False
+  
+
+    def read_collection(self,collection:str)-> list:
+         if self.db != None:
+             try:
+                 return list(self.db[collection].find())
+             except  Exception as e:
+                 print(f"Exception reading collection:{e}")
+         return []
+
+
 
     def close(self):
         self.client.close()
