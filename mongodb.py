@@ -63,12 +63,14 @@ class MongoDB:
         retryWrites=true retry certain write operations a single time if they fail.
         """
         if MongoDBPrivate.atlas:
-            uri = f"mongodb+srv://{MongoDBPrivate.user}:{MongoDBPrivate.password}\
-                    @{MongoDBPrivate.host}/{MongoDBPrivate.database}?retryWrites=true&w=majority"
+            uri = f"mongodb+srv://{MongoDBPrivate.user}:{MongoDBPrivate.password}"
+            uri += f"@{MongoDBPrivate.host}/{MongoDBPrivate.database}"
+            uri += "?retryWrites=true&w=majority"
         else:
-            uri = f"mongodb://{MongoDBPrivate.user}:{MongoDBPrivate.password}@{MongoDBPrivate.host}\
-                    /{MongoDBPrivate.database}"
+            uri = f"mongodb://{MongoDBPrivate.user}:{MongoDBPrivate.password}"
+            uri += f"@{MongoDBPrivate.host}/{MongoDBPrivate.database}"
         try:
+            print(uri)
             client = MongoClient(uri, serverSelectionTimeoutMS=5000)
         except errors.ConnectionFailure as error:
             print(f"MongoClient Connection ERROR:{error}")
