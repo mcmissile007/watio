@@ -1,27 +1,39 @@
+"""
+TODO
+"""
 import json
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util import Retry
 
-class HTTPSRequest():
 
+class HTTPSRequest:
+    """
+    TODO
+    """
 
-    def __init__(self,total_retries = 3,backoff_factor = 2):
+    def __init__(self, total_retries=3, backoff_factor=2):
 
-        allowed_methods = ["HEAD", "GET", "PUT",
-                           "DELETE", "OPTIONS", "TRACE", "POST"]
+        allowed_methods = ["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE", "POST"]
         status_forcelist = [429, 500, 502, 503, 504]
-        retries = Retry(total=total_retries, backoff_factor=backoff_factor,
-                        status_forcelist=status_forcelist, allowed_methods=allowed_methods)
+        retries = Retry(
+            total=total_retries,
+            backoff_factor=backoff_factor,
+            status_forcelist=status_forcelist,
+            allowed_methods=allowed_methods,
+        )
         self.adapter = HTTPAdapter(max_retries=retries)
 
-    def get_request(self,url,timeout=2.0) -> dict:
+    def get_request(self, url, timeout=2.0) -> dict:
+        """
+        TODO
+        """
         print(f"getting request: {url}")
         with requests.Session() as session:
             session.mount("https://", self.adapter)
             session.mount("http://", self.adapter)
             try:
-                response = session.get(url,timeout = timeout)
+                response = session.get(url, timeout=timeout)
                 response.raise_for_status()
                 return response.json()
             except requests.exceptions.ConnectionError as errc:
@@ -36,16 +48,19 @@ class HTTPSRequest():
                 print(f"generic requests error:{err}")
             except json.decoder.JSONDecodeError as errj:
                 print(f"json decode error: {errj}")
-            except Exception as e:
-                print(f"exception: {e}")
+
         return {}
-    def get_basic_auth_request(self,url,username,password,timeout=2.0) -> dict:
+
+    def get_basic_auth_request(self, url, username, password, timeout=2.0) -> dict:
+        """
+        TODO
+        """
         print(f"getting request: {url}")
         with requests.Session() as session:
             session.mount("https://", self.adapter)
             session.mount("http://", self.adapter)
             try:
-                response = session.get(url,timeout = timeout,auth=(username,password))
+                response = session.get(url, timeout=timeout, auth=(username, password))
                 response.raise_for_status()
                 return response.json()
             except requests.exceptions.ConnectionError as errc:
@@ -60,6 +75,4 @@ class HTTPSRequest():
                 print(f"generic requests error:{err}")
             except json.decoder.JSONDecodeError as errj:
                 print(f"json decode error: {errj}")
-            except Exception as e:
-                print(f"exception: {e}")
         return {}
