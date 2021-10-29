@@ -66,9 +66,13 @@ class MongoDB:
             uri = f"mongodb+srv://{MongoDBPrivate.user}:{MongoDBPrivate.password}"
             uri += f"@{MongoDBPrivate.host}/{MongoDBPrivate.database}"
             uri += "?retryWrites=true&w=majority"
-        else:
+        elif MongoDBPrivate.user != "":
             uri = f"mongodb://{MongoDBPrivate.user}:{MongoDBPrivate.password}"
             uri += f"@{MongoDBPrivate.host}/{MongoDBPrivate.database}"
+
+        else:
+            uri = f"mongodb://{MongoDBPrivate.host}/{MongoDBPrivate.database}"
+
         try:
             print(uri)
             client = MongoClient(uri, serverSelectionTimeoutMS=5000)
