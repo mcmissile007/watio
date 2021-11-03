@@ -2,6 +2,7 @@
 TODO
 """
 from datetime import datetime
+import pytz
 from https_requests import HTTPSRequest
 
 
@@ -38,14 +39,17 @@ class ZWayvDevAPI:
             print(f"IndexError in sensor_meter_response:{error}")
         return -1.0
 
-    def __parse_sensor_meter_info(self, response) -> dict:
+    @staticmethod
+    def __parse_sensor_meter_info(response, time_zone: pytz.timezone) -> dict:
         info = {}
         try:
             info["level"] = float(response["data"]["metrics"]["level"])
             info["unit"] = str(response["data"]["metrics"]["scaleTitle"])
             info["title"] = str(response["data"]["metrics"]["title"])
-            info["epoch"] = int(response["data"]["updateTime"])
-            info["ts"] = datetime.fromtimestamp(int(response["data"]["updateTime"]))
+            info["ts"] = datetime.fromtimestamp(
+                int(response["data"]["updateTime"]), tz=time_zone
+            )
+            info["epoch"] = int(info["ts"].strftime("%s"))
             return info
         except KeyError as error:
             print(f"KeyError in sensor_meter_response:{error}")
@@ -63,7 +67,7 @@ class ZWayvDevAPI:
         # pprint(response)
         return ZWayvDevAPI.__parse_sensor_meter_level(response)
 
-    def sensor_meter_info(self, device: str) -> dict:
+    def sensor_meter_info(self, device: str, time_zone: pytz.timezone) -> dict:
         """
         TODO
         """
@@ -71,7 +75,7 @@ class ZWayvDevAPI:
         url = self.base_url + device
         response = http.get_basic_auth_request(url, self.username, self.password)
         # pprint(response)
-        return self.__parse_sensor_meter_info(response)
+        return ZWayvDevAPI.__parse_sensor_meter_info(response, time_zone)
 
     def sensor_update(self, device: str) -> None:
         """
