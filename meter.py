@@ -24,7 +24,7 @@ class Meter:
     def __init__(self, name, time_zone):
         self.run = True
         self.name = name
-        self.tz = time_zone
+        self.time_zone = time_zone
         self.data = []
         signal.signal(signal.SIGTERM, self.__signal_term_handler)
         signal.signal(signal.SIGINT, self.__signal_int_handler)
@@ -74,15 +74,16 @@ class Meter:
                     self.__save_data_to_file(self.name)
                     break
 
-                info = zway.sensor_meter_info(device, self.tz)
+                info = zway.sensor_meter_info(device, self.time_zone)
                 print(f"info:{info}")
                 mongodb.insert(self.name, info)
                 self.data.append(info)
                 if stop_end_of_day:
-                    now = datetime.now(tz=self.tz)
+                    now = datetime.now(tz=self.time_zone)
                     if now.hour == 23 and now.minute == 59:
                         print("End of day, terminating...")
-                        self.__save_data_to_file(self.name)
+                        filename = f"{self.name}_{now.day}_{now.month}_{now.year}"
+                        self.__save_data_to_file(filename)
                         break
 
     @staticmethod
@@ -138,6 +139,8 @@ if __name__ == "__main__":
     if DEVICE_ID not in DEVICES:
         print("Device ID does not exist")
         sys.exit(2)
+
+    meter = Meter(NAME, TZ)
     if TIME == "day":
         while True:
             time.sleep(10)
@@ -146,9 +149,10 @@ if __name__ == "__main__":
             print(__now)
             if __now.hour == 0 and __now.minute == 0:
                 print("It is time to start")
-                break
-
-    meter = Meter(NAME, TZ)
-    meter.save_info_process(DEVICES[DEVICE_ID], 10)
+                meter.save_info_process(DEVICES[DEVICE_ID], 10)
+    elif TIME == "now":
+        meter.save_info_process(DEVICES[DEVICE_ID], 10)
+    else:
+        print("time option not valid")
 
     print("profesor watio main ended...")
