@@ -6,7 +6,6 @@ TODO
 import csv
 import sys
 import getopt
-import select
 import signal
 import time
 from datetime import datetime
@@ -56,9 +55,7 @@ class Meter:
                 writer.writeheader()
                 writer.writerows(self.data)
 
-    def save_info_process(
-        self, device: str, interval: int, stop_end_of_day: bool = False
-    ):
+    def save_info_process(self, device: str, interval: int, stop_end_of_day: bool):
         """
             TODO
         """
@@ -68,12 +65,7 @@ class Meter:
         with MongoDB() as mongodb:
             while self.run:
                 zway.sensor_update(device)
-                print("press enter to finish:")
-                _input, _output, _excep = select.select([sys.stdin], [], [], interval)
-                if _input:
-                    self.__save_data_to_file(self.name)
-                    break
-
+                time.sleep(interval)
                 info = zway.sensor_meter_info(device, self.time_zone)
                 print(f"info:{info}")
                 mongodb.insert(self.name, info)
@@ -84,7 +76,7 @@ class Meter:
                         print("End of day, terminating...")
                         filename = f"{self.name}_{now.day}_{now.month}_{now.year}"
                         self.__save_data_to_file(filename)
-                        break
+                        self.run = False
 
     @staticmethod
     def load_data_from_mongodb(collection):
@@ -149,9 +141,9 @@ if __name__ == "__main__":
             print(__now)
             if __now.hour == 0 and __now.minute == 0:
                 print("It is time to start")
-                meter.save_info_process(DEVICES[DEVICE_ID], 10)
+                meter.save_info_process(DEVICES[DEVICE_ID], 10, True)
     elif TIME == "now":
-        meter.save_info_process(DEVICES[DEVICE_ID], 10)
+        meter.save_info_process(DEVICES[DEVICE_ID], 10, False)
     else:
         print("time option not valid")
 
