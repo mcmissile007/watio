@@ -76,6 +76,7 @@ class Meter:
                         print("End of day, terminating...")
                         filename = f"{self.name}_{now.day}_{now.month}_{now.year}"
                         self.__save_data_to_file(filename)
+                        self.data = []
                         self.run = False
 
     @staticmethod
@@ -104,8 +105,6 @@ if __name__ == "__main__":
     DEVICE_ID = 0
     TIME = "now"
     TZ = pytz.timezone("Europe/Madrid")
-    # main = Main(NAME)
-    # main.save_info_process(DEVICES[0], interval=10)
     argv = sys.argv[1:]
     try:
         opts, args = getopt.getopt(
@@ -132,17 +131,18 @@ if __name__ == "__main__":
         print("Device ID does not exist")
         sys.exit(2)
 
-    meter = Meter(NAME, TZ)
     if TIME == "day":
         while True:
             time.sleep(10)
-            print("waiting to start at 0:00")
+            print("waiting to start at 0:00...")
             __now = datetime.now(tz=TZ)
             print(__now)
             if __now.hour == 0 and __now.minute == 0:
                 print("It is time to start")
+                meter = Meter(NAME, TZ)
                 meter.save_info_process(DEVICES[DEVICE_ID], 10, True)
     elif TIME == "now":
+        meter = Meter(NAME, TZ)
         meter.save_info_process(DEVICES[DEVICE_ID], 10, False)
     else:
         print("time option not valid")
