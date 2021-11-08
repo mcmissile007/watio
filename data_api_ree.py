@@ -13,6 +13,7 @@ TODO
 
 import decimal
 from datetime import datetime
+from datetime import timedelta
 from typing import List
 from https_requests import HTTPSRequest
 
@@ -42,32 +43,35 @@ class DataAPIRee:
         decimal.getcontext().prec = 4
         return str(decimal.Decimal(kwh_price) / decimal.Decimal(1000))
 
-    def __parse_kwh_price_values(self, values: List[dict]) -> List[dict]:
-        return [
-            {
-                "datetime": self.__convert_datetime(v["datetime"]),
-                "price": self.__convert_mwh_to_kwh(v["value"]),
-            }
+    def __parse_kwh_price_values(self, values: List[dict]) -> dict:
+        return {
+            self.__convert_datetime(v["datetime"]): self.__convert_mwh_to_kwh(
+                v["value"]
+            )
             for v in values
-        ]
+        }
 
     @staticmethod
     def __parse_kwh_price_response(response: dict) -> list:
         try:
             return response["included"][0]["attributes"]["values"]
         except KeyError as key_error:
-            print(f"KeyError in kwh_price response:{key_error}")
+            print(
+                f"KeyError in kwh_price response:{key_error}. maybe not data in server yet"
+            )
         except IndexError as index_error:
-            print(f"IndexError in kwh_price response:{index_error}")
+            print(
+                f"IndexError in kwh_price response:{index_error}. maybe not data in server yet"
+            )
         return []
 
     def __get_kwh_price(
         self, start_date: str, end_date: str, time_trunc="hour", geo="peninsula"
-    ) -> list:
+    ) -> dict:
 
         command = "mercados/precios-mercados-tiempo-real"
         if geo not in self.geo_ids:
-            return []
+            return {}
 
         query = f"?start_date={start_date}&end_date={end_date}\
                 &time_trunc={time_trunc}&geo_ids={self.geo_ids[geo]}"
@@ -77,13 +81,24 @@ class DataAPIRee:
         )
         return self.__parse_kwh_price_values(kwh_prices_response)
 
-    def today_kwh_price(self, geo="peninsula") -> None:
+    def today_kwh_price(self, geo="peninsula") -> dict:
         """
         TODO
         """
         print("getting today kwh price...")
         # YYYY-MM-DDTHH:MM ; T means local time
         today = datetime.now().strftime("%Y-%m-%d")
+        start_date = f"{today}T00:00"
+        end_date = f"{today}T23:59"
+        return self.__get_kwh_price(start_date, end_date, geo=geo)
+
+    def tomorrow_kwh_price(self, geo="peninsula") -> dict:
+        """
+        TODO
+        """
+        print("getting today kwh price...")
+        # YYYY-MM-DDTHH:MM ; T means local time
+        today = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
         start_date = f"{today}T00:00"
         end_date = f"{today}T23:59"
         return self.__get_kwh_price(start_date, end_date, geo=geo)

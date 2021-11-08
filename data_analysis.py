@@ -42,7 +42,7 @@ class DataAnalysis:
         return (self.data["wh"].sum()) / 1000
 
     def get_data(self) -> pd.DataFrame:
-        """ 
+        """
         TODO
         """
         return self.data
@@ -65,6 +65,33 @@ class DataAnalysis:
         plt.xticks(x_pos, bars)
         ax1.plot(self.data.hour, self.data.level, color="blue")
         plt.show()
+
+    def get_total_cost(self, prices: dict, delay: float) -> float:
+        """
+        TODO
+        """
+
+        duration = self.data["hour"].max()
+
+        if duration + delay > 23.5:
+            return -1.0
+
+        # rounded values down 4.7 -> 4
+        self.data["rate_hour"] = (self.data.hour + delay).astype(int)
+
+        # rounded values ok 4.7 -> 5
+        # self.data["rate_hour"] = self.data["rate_hour"].round(0).astype(int)
+        # https://kanoki.org/2019/04/06/pandas-map-dictionary-values-with-dataframe-columns/
+
+        self.data["price_kwh"] = self.data["rate_hour"].map(prices)
+        self.data["price_ws"] = self.data.price_kwh.map(lambda x: x / (3600 * 1000))
+        self.data["cost"] = (
+            self.data["level"] * self.data["interval"] * self.data["price_ws"]
+        )
+
+        print(self.data)
+
+        return self.data["cost"].sum(min_count=4)
 
     def read_data_from_file(self, filename):
         """
