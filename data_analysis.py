@@ -89,8 +89,6 @@ class DataAnalysis:
             self.data["level"] * self.data["interval"] * self.data["price_ws"]
         )
 
-        print(self.data)
-
         return self.data["cost"].sum(min_count=4)
 
     def read_data_from_file(self, filename):
