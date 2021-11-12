@@ -46,7 +46,7 @@ def analyze(ree_prices: dict, name: str):
     return results
 
 
-def send_results(_device: str, _results: list, number: int):
+def send_results(_device: str, _results: list, number: int, _now: datetime):
     """
     TODO
     """
@@ -54,7 +54,11 @@ def send_results(_device: str, _results: list, number: int):
     option = 1
     for _datetime, _price in _results[:number]:
         str_time = _datetime.strftime("%H:%M")
-        message += f"{option}. Dia {_datetime.day} a las {str_time}h\r\n"
+        if _datetime.day == _now.day:
+            message += f"{option}. Hoy  a las {str_time}h\r\n"
+        else:
+            message += f"{option}. Mañana a las {str_time}h\r\n"
+
         option += 1
 
     m_matrix = Matrix(
@@ -79,7 +83,7 @@ def main(programs: dict, _now: datetime):
             for description, name in programs.items():
                 results = analyze(ree_prices, name)
                 print(results)
-                send_results(description, results, 12)
+                send_results(description, results, 12, _now)
                 time.sleep(5)
             return
         time.sleep(300)
@@ -96,8 +100,8 @@ if __name__ == "__main__":
     # }
 
     PROGRAMS = {
-        "lavavajillas programa largo 3h30m": "DWBOSCHECO3h30m50cel",
-        "lavavajillas o lavadora programa corto menor de 1h": "WMAEGOKOPower1h40cel1000rpm",
+        "lavavajillas programa largo 3h": "DWBOSCHECO3h30m50cel",
+        "lavadora o lavavajillas programa corto 1h": "WMAEGOKOPower1h40cel1000rpm",
     }
     print("start scheduler")
 
@@ -106,7 +110,7 @@ if __name__ == "__main__":
     while True:  # run as a service always running
         wake_up_on_time(20, 30, TZ)
         main(PROGRAMS, datetime.now(tz=TZ))
-        time.sleep(300)
+        time.sleep(18 * 3600)
 
     # main(PROGRAMS, datetime.now(tz=TZ))
 
