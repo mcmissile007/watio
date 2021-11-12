@@ -19,8 +19,10 @@ def wake_up_on_time(_hour: int, _minute: int, timezone: pytz.timezone):
     """
     while True:
         _now = datetime.now(tz=timezone)
-        _time = _now.replace(hour=_hour, minute=_minute, second=0, microsecond=0)
-        if _now > time:
+        time_to_wake_up = _now.replace(
+            hour=_hour, minute=_minute, second=0, microsecond=0
+        )
+        if _now > time_to_wake_up:
             return
         time.sleep(30)
 
