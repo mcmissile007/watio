@@ -36,7 +36,8 @@ class DataAPIRee:
     def __convert_datetime(self, _datetime: str) -> str:
         """convert the complex ree datetime format to my simpler internal datetime format"""
         ree_datetime = datetime.strptime(_datetime, "%Y-%m-%dT%H:%M:%S.%f%z")
-        return datetime.strftime(ree_datetime, "%Y-%m-%d %H:%M")
+        # return datetime.strftime(ree_datetime, "%Y-%m-%d %H:%M")
+        return ree_datetime
 
     def __convert_mwh_to_kwh(self, kwh_price: int) -> str:
         """convert Mwh price to Kwh price"""
@@ -103,8 +104,21 @@ class DataAPIRee:
         end_date = f"{today}T23:59"
         return self.__get_kwh_price(start_date, end_date, geo=geo)
 
+    def kwh_price(self, _now: datetime, geo="peninsula") -> dict:
+        """ 
+        TODO
+        """
+        print("getting kwh price...")
+        today = _now.strftime("%Y-%m-%d")
+        tomorrow = (_now + timedelta(days=1)).strftime("%Y-%m-%d")
+        start_date = f"{today}T{_now.hour}:00"
+        end_date = f"{tomorrow}T23:59"
+        return self.__get_kwh_price(start_date, end_date, geo=geo)
+
 
 if __name__ == "__main__":
     ree = DataAPIRee()
-    prices = ree.today_kwh_price()
+    prices = ree.kwh_price(datetime.now() - timedelta(days=1))
     print(f"prices:{prices}")
+    for k in prices.keys():
+        print(type(k))

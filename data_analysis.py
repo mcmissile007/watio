@@ -1,6 +1,8 @@
 """
 TODO
 """
+from datetime import datetime
+from datetime import timedelta
 import pandas as pd
 from matplotlib import pyplot as plt
 
@@ -66,7 +68,7 @@ class DataAnalysis:
         ax1.plot(self.data.hour, self.data.level, color="blue")
         plt.show()
 
-    def get_total_cost(self, prices: dict, delay: float) -> float:
+    def get_total_cost_old(self, prices: dict, delay: float) -> float:
         """
         TODO
         """
@@ -90,6 +92,38 @@ class DataAnalysis:
         )
 
         return self.data["cost"].sum(min_count=4)
+
+    def get_total_cost(self, prices: dict, delay: float) -> float:
+        """
+        TODO
+        """
+        sorted_prices_datetimes = sorted(prices.keys())
+        first_price_datetime = sorted_prices_datetimes[0]
+        last_price_datetime = sorted_prices_datetimes[-1]
+        print(f"first_price_datetime:{first_price_datetime}")
+        print(f"last_price_datetime:{last_price_datetime}")
+        print(f"delay:{delay}")
+        duration = self.data["hour"].max()
+        print(f"max_duration:{duration}")
+        end = first_price_datetime + timedelta(hours=(delay + duration))
+        if end > last_price_datetime + timedelta(hours=1):
+            return -1
+
+        # rounded values down 4.7 -> 4
+        self.data["rate_hour"] = (self.data.hour + delay).astype(int)
+        # rounded values ok 4.7 -> 5
+        # self.data["rate_hour"] = self.data["rate_hour"].round(0).astype(int)
+        # https://kanoki.org/2019/04/06/pandas-map-dictionary-values-with-dataframe-columns/
+        self.data["datetime"] = first_price_datetime + self.data["rate_hour"].map(
+            lambda x: timedelta(hours=x)
+        )
+        print(self.data)
+        self.data["price_kwh"] = self.data["datetime"].map(prices)
+        self.data["price_ws"] = self.data.price_kwh.map(lambda x: x / (3600 * 1000))
+        self.data["cost"] = (
+            self.data["level"] * self.data["interval"] * self.data["price_ws"]
+        )
+        return self.data["cost"].sum(min_count=int(duration))
 
     def read_data_from_file(self, filename):
         """
