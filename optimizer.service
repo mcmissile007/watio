@@ -1,5 +1,5 @@
 [Unit]
-Description=optimizer service
+Description=Optimizer service
 After=network.target
 
 [Service]
