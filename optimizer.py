@@ -83,7 +83,7 @@ def main(time_zone: pytz.timezone):
 
     ree = DataAPIRee()
     ree_prices = ree.kwh_price(datetime.now(tz=time_zone) + timedelta(hours=1))
-    print(ree_prices)
+    logging.info(ree_prices)
     if ree_prices:
         switch_on_times = better_times(ree_prices, 12)
         logging.info("switch_on_times:%s", switch_on_times)
@@ -95,11 +95,12 @@ def main(time_zone: pytz.timezone):
         heater = ZWayConf.water_heater_electric_meter
         while True:
             now = wake_up_o_clock(time_zone)
+            logging.info("now:%s", now)
             if now in switch_on_times:
                 zway.switch_on(heater)
                 logging.info("Switch on heater")
                 send_message("Optimizer: Switch on heater")
-            if now in switch_off_times():
+            if now in switch_off_times:
                 zway.switch_off(heater)
                 logging.info("Switch off heater")
                 send_message("Optimizer: Switch off heater")
@@ -107,7 +108,7 @@ def main(time_zone: pytz.timezone):
                 logging.info("it is time to start again with new prices")
                 send_message("Optimizer: it is time to start again with new prices")
                 return
-            time.sleep(60)
+            time.sleep(10)
 
 
 if __name__ == "__main__":
@@ -116,8 +117,10 @@ if __name__ == "__main__":
     logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
     logging.info("start optimizer")
     while True:  # run as a service always running
+        time.sleep(60)
         logging.info("Waiting to have new prices from REE")
         send_message("Optimizer: Waiting to have new prices from REE")
         wake_up_on_time(20, 40, TZ)
         main(TZ)
+        time.sleep(60)
     logging.info("end optimizer")
