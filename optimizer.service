@@ -3,7 +3,7 @@ Description=Optimizer service
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 -u optimizer.py
+ExecStart=/usr/bin/python3  optimizer.py
 WorkingDirectory=/home/pi/code/watio
 StandardOutput=inherit
 StandardError=inherit

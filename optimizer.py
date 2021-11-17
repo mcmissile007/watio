@@ -1,16 +1,17 @@
 """
 TODO
 """
-
+import logging
+import os
 import time
 from datetime import datetime
 from datetime import timedelta
 
 import pytz
 from data_api_ree import DataAPIRee
-from data_analysis import DataAnalysis
 from matrix import Matrix
-from private.config import MatrixPrivate
+from private.config import ZWayPrivate, MatrixPrivate
+from zway import ZWayConf, ZWayvDevAPI
 
 
 def wake_up_on_time(_hour: int, _minute: int, timezone: pytz.timezone):
@@ -38,40 +39,10 @@ def wake_up_o_clock(timezone: pytz.timezone) -> datetime:
         time.sleep(10)
 
 
-def analyze(ree_prices: dict, name: str):
+def send_message(message):
     """
     TODO
     """
-    data_analysis = DataAnalysis()
-    data_analysis.read_data_from_file(f"data/{name}.csv")
-    prices = {key: float(value) for key, value in ree_prices.items()}
-
-    results = [
-        data_analysis.get_total_cost(prices, delay)
-        for delay in range(0, len(prices.keys()))
-    ]
-
-    results = [result for result in results if result[1] > 0.0]
-    results.sort(key=lambda x: x[1])
-
-    return results
-
-
-def send_results(_device: str, _results: list, number: int, _now: datetime):
-    """
-    TODO
-    """
-    message = f"Mejores horarios para {_device}:\r\n"
-    option = 1
-    for _datetime, _price in _results[:number]:
-        str_time = _datetime.strftime("%H:%M")
-        if _datetime.day == _now.day:
-            message += f"{option}. Hoy  a las {str_time}h\r\n"
-        else:
-            message += f"{option}. Mañana a las {str_time}h\r\n"
-
-        option += 1
-
     m_matrix = Matrix(
         MatrixPrivate.client_base_url,
         MatrixPrivate.media_base_url,
@@ -115,27 +86,38 @@ def main(time_zone: pytz.timezone):
     print(ree_prices)
     if ree_prices:
         switch_on_times = better_times(ree_prices, 12)
-        print(switch_on_times)
+        logging.info("switch_on_times:%s", switch_on_times)
         switch_off_times = worst_times(ree_prices, 12)
-        print(switch_off_times)
+        logging.info("switch_off_times:%s", switch_off_times)
+        zway = ZWayvDevAPI(
+            ZWayConf.url, ZWayConf.port, ZWayPrivate.user, ZWayPrivate.password
+        )
+        heater = ZWayConf.water_heater_electric_meter
         while True:
             now = wake_up_o_clock(time_zone)
             if now in switch_on_times:
-                print("switch on heater")
+                zway.switch_on(heater)
+                logging.info("Switch on heater")
+                send_message("Optimizer: Switch on heater")
             if now in switch_off_times():
-                print("switch off heater")
+                zway.switch_off(heater)
+                logging.info("Switch off heater")
+                send_message("Optimizer: Switch off heater")
             if now.hour == 20:
-                print("it is time to start again with new prices")
+                logging.info("it is time to start again with new prices")
+                send_message("Optimizer: it is time to start again with new prices")
                 return
             time.sleep(60)
 
 
 if __name__ == "__main__":
 
-    print("start optimizer")
     TZ = pytz.timezone("Europe/Madrid")
+    logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+    logging.info("start optimizer")
     while True:  # run as a service always running
-        print("It is time to update prices")
+        logging.info("Waiting to have new prices from REE")
+        send_message("Optimizer: Waiting to have new prices from REE")
         wake_up_on_time(20, 40, TZ)
         main(TZ)
-    print("end optimizer")
+    logging.info("end optimizer")
