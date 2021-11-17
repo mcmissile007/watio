@@ -108,7 +108,7 @@ def main(time_zone: pytz.timezone):
                 logging.info("it is time to start again with new prices")
                 send_message("Optimizer: it is time to start again with new prices")
                 return
-            time.sleep(10)
+            time.sleep(60)
 
 
 if __name__ == "__main__":
