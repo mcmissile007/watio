@@ -65,6 +65,31 @@ def better_times(ree_prices: dict, number: int):
     return prices[:number]
 
 
+def better_times_slot(ree_prices: dict, number: int):
+    """
+    TODO
+    """
+
+    prices = {key: float(value) for key, value in ree_prices.items()}
+    prices = list(prices.items())
+    prices.sort(key=lambda x: x[0])  # sort by datetime
+    logging.info("prices:%s", prices)
+
+    prices_slot1 = prices[: int(len(prices) / 2)]
+    prices_slot2 = prices[int(len(prices) / 2) :]
+
+    prices_slot1.sort(key=lambda x: x[1])  # sort by price
+    prices_slot1 = [item[0] for item in prices]
+
+    prices_slot2.sort(key=lambda x: x[1])  # sort by price
+    prices_slot2 = [item[0] for item in prices]
+
+    logging.info("prices_slot1:%s", prices_slot1)
+    logging.info("prices_slot2:%s", prices_slot2)
+
+    return prices_slot1[:number] + prices_slot2[:number]
+
+
 def worst_times(ree_prices: dict, number: int):
     """
     TODO
@@ -85,10 +110,8 @@ def main(time_zone: pytz.timezone):
     ree_prices = ree.kwh_price(datetime.now(tz=time_zone) + timedelta(hours=1))
     logging.info(ree_prices)
     if ree_prices:
-        switch_on_times = better_times(ree_prices, 12)
+        switch_on_times = better_times_slot(ree_prices, 4)
         logging.info("switch_on_times:%s", switch_on_times)
-        switch_off_times = worst_times(ree_prices, 12)
-        logging.info("switch_off_times:%s", switch_off_times)
         zway = ZWayvDevAPI(
             ZWayConf.url, ZWayConf.port, ZWayPrivate.user, ZWayPrivate.password
         )
@@ -99,14 +122,14 @@ def main(time_zone: pytz.timezone):
             if now in switch_on_times:
                 zway.switch_on(heater)
                 logging.info("Switch on heater")
-                send_message("Optimizer: Switch on heater")
-            if now in switch_off_times:
+                send_message(f"Optimizer: Switch on heater:{now}")
+            else:
                 zway.switch_off(heater)
-                logging.info("Switch off heater")
-                send_message("Optimizer: Switch off heater")
+                logging.info("Switch off heater:%s", now)
+                send_message(f"Optimizer: Switch off heater:{now}")
             if now.hour == 20:
                 logging.info("it is time to start again with new prices")
-                send_message("Optimizer: it is time to start again with new prices")
+                send_message(f"Optimizer: start again with new prices:{now}")
                 return
             time.sleep(60)
 
