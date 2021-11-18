@@ -79,10 +79,10 @@ def better_times_slot(ree_prices: dict, number: int):
     prices_slot2 = prices[int(len(prices) / 2) :]
 
     prices_slot1.sort(key=lambda x: x[1])  # sort by price
-    prices_slot1 = [item[0] for item in prices]
+    prices_slot1 = [item[0] for item in prices_slot1]
 
     prices_slot2.sort(key=lambda x: x[1])  # sort by price
-    prices_slot2 = [item[0] for item in prices]
+    prices_slot2 = [item[0] for item in prices_slot2]
 
     logging.info("prices_slot1:%s", prices_slot1)
     logging.info("prices_slot2:%s", prices_slot2)
