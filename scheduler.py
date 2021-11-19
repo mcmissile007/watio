@@ -5,12 +5,15 @@ TODO
 import time
 from datetime import datetime
 from datetime import timedelta
+from typing import List
 
 import pytz
 from data_api_ree import DataAPIRee
 from data_analysis import DataAnalysis
 from matrix import Matrix
-from private.config import MatrixPrivate
+from telegram import Telegram
+from private.config import MatrixPrivate, TelegramPrivate
+from sender import Sender
 
 
 def wake_up_on_time(_hour: int, _minute: int, timezone: pytz.timezone):
@@ -46,7 +49,14 @@ def analyze(ree_prices: dict, name: str):
     return results
 
 
-def send_results(_device: str, _results: list, number: int, _now: datetime):
+def send_results(
+    sender: Sender,
+    destination_id: str,
+    _device: str,
+    _results: list,
+    number: int,
+    _now: datetime,
+):
     """
     TODO
     """
@@ -61,18 +71,11 @@ def send_results(_device: str, _results: list, number: int, _now: datetime):
 
         option += 1
 
-    m_matrix = Matrix(
-        MatrixPrivate.client_base_url,
-        MatrixPrivate.media_base_url,
-        MatrixPrivate.user_name,
-        MatrixPrivate.password,
-    )
-    if m_matrix.login():
-        m_matrix.room_id = MatrixPrivate().room_id
-        m_matrix.send_message(message)
+    if sender.login():
+        sender.send_message(message, destination_id)
 
 
-def main(programs: dict, _now: datetime):
+def main(senders: List[Sender], programs: dict, _now: datetime):
     """
     TODO
     """
@@ -83,7 +86,8 @@ def main(programs: dict, _now: datetime):
             for description, name in programs.items():
                 results = analyze(ree_prices, name)
                 print(results)
-                send_results(description, results, 12, _now)
+                for sender in senders:
+                    send_results(sender, None, description, results, 12, _now)
                 time.sleep(5)
             return
         time.sleep(300)
@@ -107,9 +111,21 @@ if __name__ == "__main__":
 
     TZ = pytz.timezone("Europe/Madrid")
 
+    matrix = Matrix(
+        MatrixPrivate.client_base_url,
+        MatrixPrivate.media_base_url,
+        MatrixPrivate.user_name,
+        MatrixPrivate.password,
+        MatrixPrivate.room_id,
+    )
+
+    telegram = Telegram(TelegramPrivate.bot_api_key, TelegramPrivate.channel_id)
+
+    SENDERS = [matrix, telegram]
+
     while True:  # run as a service always running
         wake_up_on_time(20, 30, TZ)
-        main(PROGRAMS, datetime.now(tz=TZ))
+        main(SENDERS, PROGRAMS, datetime.now(tz=TZ))
         time.sleep(18 * 3600)
 
     # main(PROGRAMS, datetime.now(tz=TZ))

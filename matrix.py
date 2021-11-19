@@ -4,22 +4,23 @@ TODO
 from dataclasses import dataclass
 import json
 import requests
+from sender import Sender
 
 
 @dataclass
-class Matrix:
+class Matrix(Sender):
     """
     TODO
     """
 
-    client_base_url: str = ""
-    media_base_url: str = ""
-    user_name: str = ""
-    password: str = ""
-    user_id: tuple = (None,)
-    home_server: tuple = (None,)
-    access_token: tuple = (None,)
-    room_id: tuple = None
+    client_base_url: str
+    media_base_url: str
+    user_name: str
+    password: str
+    room_id: str
+    user_id: str = ""
+    home_server: str = ""
+    access_token: str = None
 
     def is_supported_login_password(self):
         """
@@ -87,16 +88,20 @@ class Matrix:
             print(f"Exception: {error}")
             return False
 
-    def login(self):
+    def login(self, user_name: str = None, password: str = None):
         """
         TODO
         """
         if not self.is_supported_login_password():
             print("Not supported login password")
             return False
+        if user_name is None:
+            user_name = self.user_name
+        if password is None:
+            password = self.password
         post_data = {
-            "user": self.user_name,
-            "password": self.password,
+            "user": user_name,
+            "password": password,
             "type": "m.login.password",
         }
         try:
@@ -198,22 +203,22 @@ class Matrix:
             print(f"Request post exception: {error}")
             return False
 
-    def send_message(self, message, room_id=None):
+    def send_message(self, message: str, destination_id: str = None):
         """
         TODO
         """
         if self.access_token is None:
             return False
-        if room_id is None and self.room_id is None:
+        if destination_id is None and self.room_id is None:
             return False
-        if room_id is None and self.room_id is not None:
-            room_id = self.room_id
+        if destination_id is None and self.room_id is not None:
+            destination_id = self.room_id
         post_data = {"msgtype": "m.text", "body": message}
         try:
             response = requests.post(
                 self.client_base_url
                 + "rooms/"
-                + room_id
+                + id
                 + "/send/m.room.message?access_token="
                 + self.access_token,
                 data=json.dumps(post_data),
