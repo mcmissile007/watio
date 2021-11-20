@@ -48,9 +48,9 @@ def send_message(message):
         MatrixPrivate.media_base_url,
         MatrixPrivate.user_name,
         MatrixPrivate.password,
+        MatrixPrivate.room_id,
     )
     if m_matrix.login():
-        m_matrix.room_id = MatrixPrivate().room_id
         m_matrix.send_message(message)
 
 
