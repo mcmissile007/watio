@@ -218,7 +218,7 @@ class Matrix(Sender):
             response = requests.post(
                 self.client_base_url
                 + "rooms/"
-                + id
+                + destination_id
                 + "/send/m.room.message?access_token="
                 + self.access_token,
                 data=json.dumps(post_data),

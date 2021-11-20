@@ -121,6 +121,10 @@ if __name__ == "__main__":
 
     telegram = Telegram(TelegramPrivate.bot_api_key, TelegramPrivate.channel_id)
 
+    telegram.send_message("Start scheduler")
+    if matrix.login():
+        matrix.send_message("Start scheduler")
+
     SENDERS = [matrix, telegram]
 
     while True:  # run as a service always running
@@ -129,5 +133,7 @@ if __name__ == "__main__":
         time.sleep(18 * 3600)
 
     # main(PROGRAMS, datetime.now(tz=TZ))
-
+    telegram.send_message("End scheduler")
+    if matrix.login():
+        matrix.send_message("End scheduler")
     print("end scheduler")

@@ -17,15 +17,15 @@ class Telegram(Sender):
         self.bot_api_key = bot_api_key
         self.channel_id = channel_id
 
-    def __message_url(self, message: str, destination_id: str = None):
+    def __message_url(self, message: str, channel_id: str = None):
         url = f"{self.base_url}/bot{self.bot_api_key}/sendMessage?chat_id="
-        if destination_id is None:
+        if channel_id is None:
             return url + f"{self.channel_id}&text={message}"
         else:
-            return url + f"{destination_id}&text={message}"
+            return url + f"{channel_id}&text={message}"
 
     def send_message(self, message: str, destination_id: str = None):
-        url = self.__message_url(message, id)
+        url = self.__message_url(message, destination_id)
         print(url)
         response = HTTPSRequest().get_request(url)
         print(response)
