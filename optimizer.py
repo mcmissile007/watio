@@ -115,7 +115,7 @@ def main(time_zone: pytz.timezone):
         zway = ZWayvDevAPI(
             ZWayConf.url, ZWayConf.port, ZWayPrivate.user, ZWayPrivate.password
         )
-        heater = ZWayConf.water_heater_electric_meter
+        heater = ZWayConf.water_heater
         while True:
             now = wake_up_o_clock(time_zone)
             logging.info("now:%s", now)

@@ -16,6 +16,7 @@ class ZWayConf:
     hall_light = "ZWayVDev_zway_18-0-37"
     hall_light_electric_meter = "ZWayVDev_zway_18-0-50-2"
     water_heater_electric_meter = "ZWayVDev_zway_15-0-50-2"
+    water_heater = "ZWayVDev_zway_15-0-37"
     house_electric_meter = "ZWayVDev_zway_17-0-50-2"
 
 
