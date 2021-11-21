@@ -85,7 +85,7 @@ if __name__ == "__main__":
     TZ = pytz.timezone("Europe/Madrid")
     INTERVAL = 10
     METER = ZWayConf.house_electric_meter
-    SWITCHES = [ZWayConf.water_heater_electric_meter]
+    SWITCHES = [ZWayConf.water_heater]
     UPPER_LIMIT = 4000
     LOWER_LIMIT = 2200
     SLEEP = 600
