@@ -105,7 +105,7 @@ class DataAPIRee:
         return self.__get_kwh_price(start_date, end_date, geo=geo)
 
     def kwh_price(self, _now: datetime, geo="peninsula") -> dict:
-        """ 
+        """
         TODO
         """
         print("getting kwh price...")

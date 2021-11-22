@@ -3,6 +3,8 @@ TODO
 """
 import logging
 import os
+import getopt
+import sys
 import time
 from datetime import datetime
 from datetime import timedelta
@@ -12,31 +14,8 @@ from data_api_ree import DataAPIRee
 from matrix import Matrix
 from private.config import ZWayPrivate, MatrixPrivate
 from zway import ZWayConf, ZWayvDevAPI
-
-
-def wake_up_on_time(_hour: int, _minute: int, timezone: pytz.timezone):
-    """
-    TODO
-    """
-    while True:
-        _now = datetime.now(tz=timezone)
-        time_to_wake_up = _now.replace(
-            hour=_hour, minute=_minute, second=0, microsecond=0
-        )
-        if _now > time_to_wake_up:
-            return
-        time.sleep(30)
-
-
-def wake_up_o_clock(timezone: pytz.timezone) -> datetime:
-    """
-    TODO
-    """
-    while True:
-        _now = datetime.now(tz=timezone)
-        if _now.minute == 0:
-            return _now.replace(second=0, microsecond=0)
-        time.sleep(10)
+from utils import wake_up_on_time
+from utils import wake_up_o_clock
 
 
 def send_message(message):
@@ -136,9 +115,31 @@ def main(time_zone: pytz.timezone):
 
 if __name__ == "__main__":
 
-    TZ = pytz.timezone("Europe/Madrid")
-    logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+    HOUR = 20
+    MINUTE = 40
+
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)s %(module)s %(funcName)s %(message)s",
+        level=os.environ.get("LOGLEVEL", "INFO"),
+    )
     logging.info("start optimizer")
+
+    argv = sys.argv[1:]
+    try:
+        opts, args = getopt.getopt(argv, "h:m:", longopts=["hour=", "minute="])
+
+    except getopt.GetoptError as error:
+        logging.error("%s", error)
+        sys.exit(2)
+
+    for opt in opts:
+        if opt[0] == "-h" or opt[0] == "--hour":
+            HOUR = int(opt[1])
+        if opt[0] == "-m" or opt[0] == "--minute":
+            MINUTE = int(opt[1])
+
+    TZ = pytz.timezone("Europe/Madrid")
+
     while True:  # run as a service always running
         time.sleep(60)
         logging.info("Waiting to have new prices from REE")

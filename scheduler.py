@@ -1,8 +1,11 @@
 """
 TODO
 """
-
+import logging
+import os
 import time
+import sys
+import getopt
 from datetime import datetime
 from datetime import timedelta
 from typing import List
@@ -14,20 +17,7 @@ from matrix import Matrix
 from telegram import Telegram
 from private.config import MatrixPrivate, TelegramPrivate
 from sender import Sender
-
-
-def wake_up_on_time(_hour: int, _minute: int, timezone: pytz.timezone):
-    """
-    TODO
-    """
-    while True:
-        _now = datetime.now(tz=timezone)
-        time_to_wake_up = _now.replace(
-            hour=_hour, minute=_minute, second=0, microsecond=0
-        )
-        if _now > time_to_wake_up:
-            return
-        time.sleep(30)
+from utils import wake_up_on_time
 
 
 def analyze(ree_prices: dict, name: str):
@@ -71,6 +61,8 @@ def send_results(
 
         option += 1
 
+    logging.info("message:%s", message)
+
     if sender.login():
         sender.send_message(message, destination_id)
 
@@ -83,13 +75,14 @@ def main(senders: List[Sender], programs: dict, _now: datetime):
         ree = DataAPIRee()
         ree_prices = ree.kwh_price(_now + timedelta(hours=1))
         if ree_prices:
+            logging.info("prices:%s", ree_prices)
             for description, name in programs.items():
                 results = analyze(ree_prices, name)
-                print(results)
+                logging.info("results:%s", results)
                 for sender in senders:
                     send_results(sender, None, description, results, 12, _now)
                 time.sleep(5)
-            return
+            return True
         time.sleep(300)
 
 
@@ -107,9 +100,30 @@ if __name__ == "__main__":
         "lavavajillas programa largo 3h": "DWBOSCHECO3h30m50cel",
         "lavadora o lavavajillas programa corto 1h": "WMAEGOKOPower1h40cel1000rpm",
     }
-    print("start scheduler")
 
     TZ = pytz.timezone("Europe/Madrid")
+    HOUR = 20
+    MINUTE = 30
+
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)s %(module)s %(funcName)s %(message)s",
+        level=os.environ.get("LOGLEVEL", "INFO"),
+    )
+    logging.info("start scheduler")
+
+    argv = sys.argv[1:]
+    try:
+        opts, args = getopt.getopt(argv, "h:m:", longopts=["hour=", "minute="])
+
+    except getopt.GetoptError as error:
+        logging.error("%s", error)
+        sys.exit(2)
+
+    for opt in opts:
+        if opt[0] == "-h" or opt[0] == "--hour":
+            HOUR = int(opt[1])
+        if opt[0] == "-m" or opt[0] == "--minute":
+            MINUTE = int(opt[1])
 
     matrix = Matrix(
         MatrixPrivate.client_base_url,
@@ -128,12 +142,12 @@ if __name__ == "__main__":
     SENDERS = [matrix, telegram]
 
     while True:  # run as a service always running
-        wake_up_on_time(20, 30, TZ)
+        wake_up_on_time(HOUR, MINUTE, TZ)
         main(SENDERS, PROGRAMS, datetime.now(tz=TZ))
-        time.sleep(18 * 3600)
+        time.sleep(3600)
 
     # main(PROGRAMS, datetime.now(tz=TZ))
     telegram.send_message("End scheduler")
     if matrix.login():
         matrix.send_message("End scheduler")
-    print("end scheduler")
+    logging.info("end scheduler")

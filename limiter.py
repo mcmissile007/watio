@@ -1,7 +1,8 @@
 """
 TODO
 """
-
+import logging
+import os
 import time
 import pytz
 from zway import ZWayConf, ZWayvDevAPI
@@ -43,18 +44,18 @@ def main(
     zway.sensor_update(meter)
     time.sleep(interval)
     info = zway.sensor_meter_info(meter, time_zone)
-    print(info)
+    logging.info("info:%s", info)
     if "level" not in info:
-        print("level not in info")
+        logging.error("level not  in info")
         return
     if info["level"] > upper_limit:
         message = f"exceeded maximum power:{info['level']}w"
-        print(message)
+        logging.info("exceeded maximun power:%d w", info["level"])
         send_notification(message)
         for switch in switches:
             zway.switch_off(switch)
             message = f"switch_off:{switch}"
-            print(message)
+            logging.info("switch_off:%s", switch)
             send_notification(message)
             time.sleep(interval)
         while True:
@@ -63,16 +64,16 @@ def main(
             time.sleep(interval)
             info = zway.sensor_meter_info(meter, time_zone)
             if "level" not in info:
-                print("level not in info")
+                logging.error("level not  in info")
                 continue
             if info["level"] < lower_limit:
                 message = f"now is safe to turn on devices:{info['level']}w"
-                print(message)
+                logging.info("now is safe to turn on devices:%d w", info["level"])
                 send_notification(message)
                 for switch in switches:
                     zway.switch_on(switch)
                     message = f"switch_on:{switch}"
-                    print(message)
+                    logging.info("switch_on:%s", switch)
                     send_notification(message)
                     time.sleep(INTERVAL)
                 return
@@ -80,7 +81,12 @@ def main(
 
 if __name__ == "__main__":
 
-    print("start limiter")
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)s %(module)s %(funcName)s %(message)s",
+        level=os.environ.get("LOGLEVEL", "INFO"),
+    )
+
+    logging.info("start limiter")
 
     TZ = pytz.timezone("Europe/Madrid")
     INTERVAL = 10
@@ -94,4 +100,4 @@ if __name__ == "__main__":
         main(METER, SWITCHES, UPPER_LIMIT, LOWER_LIMIT, SLEEP, INTERVAL, TZ)
         time.sleep(INTERVAL)
 
-    print("end limiter")
+    logging.info("end limiter")
