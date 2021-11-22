@@ -20,9 +20,9 @@ class Telegram(Sender):
     def __message_url(self, message: str, channel_id: str = None):
         url = f"{self.base_url}/bot{self.bot_api_key}/sendMessage?chat_id="
         if channel_id is None:
-            return url + f"{self.channel_id}&text={message}"
+            return url + f"{self.channel_id}&parse_mode=MarkdownV2&text={message}"
         else:
-            return url + f"{channel_id}&text={message}"
+            return url + f"{channel_id}&parse_mode=MarkdownV2&text={message}"
 
     def send_message(self, message: str, destination_id: str = None):
         url = self.__message_url(message, destination_id)
@@ -37,5 +37,6 @@ class Telegram(Sender):
 if __name__ == "__main__":
     print("Start Telegram")
     telegram = Telegram(TelegramPrivate.bot_api_key, TelegramPrivate.channel_id)
-    telegram.send_message("Hello World from Joshua")
+    telegram.send_message("__Hello__ *World*  ~from~ _Joshua_ 🥇🥈🥉👎👍👌⛔️❌❗️‼️💡🥴")
+    telegram.send_message("[Mas información](https://www.google.com/)")
     print("End Telegram")
