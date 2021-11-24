@@ -37,6 +37,6 @@ class Telegram(Sender):
 if __name__ == "__main__":
     print("Start Telegram")
     telegram = Telegram(TelegramPrivate.bot_api_key, TelegramPrivate.channel_id)
-    telegram.send_message("__Hello__ *World*  ~from~ _Joshua_ 🥇🥈🥉👎👍👌⛔️❌❗️‼️💡🥴")
+    telegram.send_message("__Hello__ *World*  ~from~ _Joshua_ 🥇\n🥈🥉👎👍👌⛔️❌❗️‼️💡🥴")
     telegram.send_message("[Mas información](https://www.google.com/)")
     print("End Telegram")

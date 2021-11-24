@@ -58,12 +58,13 @@ class DataAnalysis:
         # values = self.data.level.resample("1Min").agg({'epoch':'first'})
         # ax2.plot(self.data.level,color="blue")
         # ax2.plot(values,color="blue")
-        bars = ("0.0", "0.25", "0.5", "1", "1.5", "2.0", "2.5", "3.0", "3.5")
-        x_pos = [0.0, 0.25, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
+
+        # bars = ("0.0", "0.25", "0.5", "1", "1.5", "2.0", "2.5", "3.0", "3.5")
+        # x_pos = [0.0, 0.25, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5]
         plt.title(f"{appliances} {kwh} KWh")
         plt.xlabel("Hours")
         plt.ylabel("Watts")
-        plt.xticks(x_pos, bars)
+        # plt.xticks(x_pos, bars)
         ax1.plot(self.data.hour, self.data.level, color="blue")
         plt.show()
 
@@ -120,7 +121,7 @@ def test_funcs():
     TODO
     """
     data = DataAnalysis()
-    measurement = "DWBOSCH1h65cel"
+    measurement = "continuous8h"
     data.read_data_from_file(f"data/{measurement}.csv")
     kwh = data.get_kwh()
     print(f"kwh:{kwh}")
