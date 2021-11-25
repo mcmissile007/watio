@@ -144,7 +144,7 @@ if __name__ == "__main__":
         time.sleep(60)
         logging.info("Waiting to have new prices from REE")
         send_message("Optimizer: Waiting to have new prices from REE")
-        wake_up_on_time(20, 40, TZ)
+        wake_up_on_time(HOUR, MINUTE, TZ)
         main(TZ)
         time.sleep(60)
     logging.info("end optimizer")

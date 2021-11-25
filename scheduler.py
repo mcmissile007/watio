@@ -6,8 +6,7 @@ import os
 import time
 import sys
 import getopt
-import decimal
-from datetime import date, datetime
+from datetime import datetime
 from datetime import timedelta
 from typing import List
 
@@ -24,7 +23,6 @@ from utils import is_night
 from utils import is_afternoon
 from utils import is_morning
 from utils import part_of_the_day
-
 
 
 def analyze(ree_prices: dict, name: str):
@@ -79,33 +77,28 @@ def send_results_old(
         sender.send_message(message, destination_id)
 
 
-
-def send_header(
-    sender: Sender,
-    _now: datetime
-):
+def send_header(sender: Sender, _now: datetime):
     """
     TODO
-    """    
+    """
     if not sender.login():
         return
     tomorrow = (_now + timedelta(days=1)).day
-    message = f"Con los precios actualizados de la tarifa de la luz PVPC para mañana dia {tomorrow}"
+    message = "Con los precios actualizados de la tarifa de la luz PVPC "
+    message += f"para mañana dia {tomorrow}\n"
     sender.send_message(message)
 
-def send_best_results(
-    sender: Sender,
-    _device: str,
-    _results: list,
-    _now: datetime
-):
+
+def calculate_best_results(_device: str, _results: list, ree_prices: dict):
     """
     TODO
     """
-    
-    if not sender.login():
-        return
-    message = f"Los mejores horarios para programar {_device}:\n"
+
+    worst_results = calculate_worst_results(ree_prices, 4)
+    worst_times = [result[0] for result in worst_results]
+
+    _results = [result for result in _results if result[0] not in worst_times]
+
     results_night = [item for item in _results if is_night(item[0])]
     results_night.sort(key=lambda item: item[1])
 
@@ -116,65 +109,96 @@ def send_best_results(
     results_afternoon.sort(key=lambda item: item[1])
 
     results_evening = [item for item in _results if is_evening(item[0])]
+
     results_evening.sort(key=lambda item: item[1])
 
     best_results = []
-    best_results.append(results_night[0])
-    best_results.append(results_morning[0])
-    best_results.append(results_afternoon[0])
-    best_results.append(results_evening[0])
+    if results_night:
+        best_results.append(results_night[0])
+    if results_morning:
+        best_results.append(results_morning[0])
+    if results_afternoon:
+        best_results.append(results_afternoon[0])
+    if results_evening:
+        best_results.append(results_evening[0])
     best_results.sort(key=lambda item: item[1])
-    icons = ['🏆','🥇','🥈','🥉']
+
+    return best_results
+
+
+def calculate_worst_results(ree_prices: dict, number: int):
+    """
+    TODO
+    """
+    prices = {key: float(value) for key, value in ree_prices.items()}
+    worst_results = list(prices.items())
+    worst_results.sort(key=lambda item: item[1], reverse=True)
+    worst_results = worst_results[:number]
+    return worst_results
+
+
+def send_best_results(
+    sender: Sender, _device: str, best_results: list, ree_prices: dict, _now: datetime
+):
+    """
+    TODO
+    """
+
+    if not sender.login():
+        return
+    message = f"Los mejores horarios para programar {_device}:"
+
+    icons = ["🏆", "🥇", "🥈", "🥉"]
 
     final_results = []
-    for i,icon in enumerate(icons):
-        final_results.append((icon,part_of_the_day(best_results[i][0]),best_results[i][0],best_results[i][1]))
-    
-    decimal.getcontext().prec = 4
+    for i, result in enumerate(best_results):
+        final_results.append((icons[i], part_of_the_day(result[0]), result[0],))
+
     for result in final_results:
-        message += "De " + result[1] + ": " 
-        message += result[0]
-        message += "a las " + result[2].strftime("%H:%M") + "h"
-        if result[1] == "noche":
-            if result[2].day == _now.day:
-                message += " de hoy "
-            else: 
-                message += " de mañana "
-        message += " a "  + str(decimal.Decimal(result[3]))+ "\n"
- 
+        message += f"\nDe {result[1]}: "
+        message += f"{result[0]}"
+        message += f"a las {result[2].strftime('%H:%M')}h"
+        if result[2].day == _now.day:
+            message += " de hoy "
+        else:
+            message += " de mañana "
+
+        price = ree_prices[result[2]]
+        price = price.replace(".", ",")
+        message += f" a {price}"
+
     sender.send_message(message)
 
+
 def send_worst_results(
-    sender: Sender,
-    _results: list,
-    _now: datetime
-    
+    sender: Sender, worst_results: list, ree_prices: dict, _now: datetime
 ):
     """
     TODO
     """
     if not sender.login():
         return
-    message = ""
-    _results.sort(key=lambda item: item[1],reverse=True)
-    icons = ['⛔️','❌','❗️','👎']
-    results = _results[:len(icons)]
+    message = (
+        "Los peores horarios en los que hay que evitar un consumo alto de energia:\n"
+    )
+
+    icons = ["⛔️", "❌", "❗️", "👎"]
+
     final_results = []
-    for i,icon in enumerate(icons):
-        final_results.append((icon,results[i][0],results[i][1]))
-    
-    decimal.getcontext().prec = 4
+    for i, result in enumerate(worst_results):
+        final_results.append((icons[i], result[0]))
 
     for result in final_results:
         message += result[0]
         message += " a las " + result[1].strftime("%H:%M") + "h"
-        if part_of_the_day(result[1]) == "noche":
-            if result[1].day == _now.day:
-                message += " de hoy"
-            else: 
-                message += " de mañana"
-        message += " a "  + str(decimal.Decimal(result[2]))+ "\n"
- 
+        if result[1].day == _now.day:
+            message += " de hoy"
+        else:
+            message += " de mañana"
+        price = ree_prices[result[1]]
+        price = price.replace(".", ",")
+        message += f" a {price}\n"
+
     sender.send_message(message)
 
 
@@ -187,17 +211,20 @@ def main(senders: List[Sender], programs: dict, _now: datetime):
         ree_prices = ree.kwh_price(_now + timedelta(hours=1))
         if ree_prices:
             logging.info("prices:%s", ree_prices)
+            worst_results = calculate_worst_results(ree_prices, 4)
             for sender in senders:
-                send_header(sender,_now)
+                send_header(sender, _now)
             for description, name in programs.items():
                 results = analyze(ree_prices, name)
                 logging.info("results:%s", results)
+                best_results = calculate_best_results(name, results, ree_prices)
                 for sender in senders:
-                    send_best_results(sender, description, results, _now)
+                    send_best_results(
+                        sender, description, best_results, ree_prices, _now
+                    )
                 time.sleep(5)
-            prices = {key: float(value) for key, value in ree_prices.items()}
             for sender in senders:
-                send_worst_results(sender, list(prices), _now)
+                send_worst_results(sender, worst_results, ree_prices, _now)
             time.sleep(5)
 
             return
@@ -215,8 +242,8 @@ if __name__ == "__main__":
     # }
 
     PROGRAMS = {
+        "lavadora o lavavajillas": "WMAEGOKOPower1h40cel1000rpm",
         "lavavajillas programa largo ECO 3h": "DWBOSCHECO3h30m50cel",
-        "lavadora o lavavajillas programa": "WMAEGOKOPower1h40cel1000rpm",
     }
 
     TZ = pytz.timezone("Europe/Madrid")
@@ -253,9 +280,7 @@ if __name__ == "__main__":
 
     telegram = Telegram(TelegramPrivate.bot_api_key, TelegramPrivate.channel_id)
 
-
     telegram.send_message("Start scheduler")
-   
 
     SENDERS = [telegram]
 
