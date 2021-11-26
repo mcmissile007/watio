@@ -84,8 +84,8 @@ def send_header(sender: Sender, _now: datetime):
     if not sender.login():
         return
     tomorrow = (_now + timedelta(days=1))
-    message = "Precios actualizados de la tarifa de la luz *PVPC* "
-    message += f"para mañana día {tomorrow.day}\n"
+    message = "Precios actualizados de la *tarifa de la luz PVPC* "
+    message += f"para mañana *día {tomorrow.day}*\n"
     sender.send_message(message)
 
 
@@ -94,7 +94,7 @@ def calculate_best_results(_device: str, _results: list, ree_prices: dict):
     TODO
     """
 
-    worst_results = calculate_worst_results(ree_prices, 4)
+    worst_results = calculate_worst_results(ree_prices, 6)
     worst_times = [result[0] for result in worst_results]
 
     _results = [result for result in _results if result[0] not in worst_times]
@@ -147,16 +147,17 @@ def send_best_results(
     if not sender.login():
         return
       
-    message = f"Las horas más barata por  __franja horaria__ para conectar {_device }  son:"
+    message = f"Las horas *más baratas* por  __franja horaria__ para conectar {_device }  son:"
     if "coches"  in _device:
-        message = f"La hora más económica para inciciar carga de  {_device }  son:"
+        message = f"Las horas *más baratas* por __franja horaria__ para inciciar carga de  {_device }  son:"
         
 
     icons = ["🏆", "🥇", "🥈", "🥉"]
 
     final_results = []
     if "coches" in _device:
-            final_results.append(("", part_of_the_day(best_results[0][0]), best_results[0][0],))
+        for i, result in enumerate(best_results[:2]):
+            final_results.append((icons[i], part_of_the_day(result[0]), result[0],))
     else:
         for i, result in enumerate(best_results):
             final_results.append((icons[i], part_of_the_day(result[0]), result[0],))
@@ -185,18 +186,18 @@ def send_worst_results(
     if not sender.login():
         return
     message = (
-        "Las horas más caras en los que hay que evitar  un consumo alto de energía son:\n"
+        "Las horas *más caras* en los que hay que evitar  un consumo alto de energía son:\n"
     )
 
-    icons = ["⛔️", "❌", "❗️", "👎"]
+    icons = ["⛔️", "❌", "❗️", "👎","👎","👎"]
 
     final_results = []
     for i, result in enumerate(worst_results):
         final_results.append((icons[i], result[0]))
 
     for result in final_results:
-       # message += result[0]
-        message += " a las  ~" + result[1].strftime("%H:%M") + "~h"
+        message += result[0]
+        message += " a las *" + result[1].strftime("%H:%M") + "*h"
         if result[1].day == _now.day:
             message += " de hoy"
         price = ree_prices[result[1]]
@@ -215,11 +216,10 @@ def main(senders: List[Sender], programs: dict, _now: datetime):
         ree_prices = ree.kwh_price(_now + timedelta(hours=1))
         if ree_prices:
             logging.info("prices:%s", ree_prices)
-            worst_results = calculate_worst_results(ree_prices, 4)
+            worst_results = calculate_worst_results(ree_prices, 6)
             for sender in senders:
                 send_header(sender, _now)
-            for sender in senders:
-                send_worst_results(sender, worst_results, ree_prices, _now)
+           
             for description, name in programs.items():
                 results = analyze(ree_prices, name)
                 logging.info("results:%s", results)
@@ -231,6 +231,8 @@ def main(senders: List[Sender], programs: dict, _now: datetime):
                 time.sleep(2)
            
             time.sleep(5)
+            for sender in senders:
+                send_worst_results(sender, worst_results, ree_prices, _now)
 
             return
         time.sleep(300)
@@ -247,8 +249,8 @@ if __name__ == "__main__":
     # }
 
     PROGRAMS = {
-        "electrodomésticos de alto consumo eléctrico \\(lavadoras,lavavajillas,secadoras etc\\.\\)": "WMAEGOKOPower1h40cel1000rpm",
-        "lavavajillas con programa ECO de 3 horas": "DWBOSCHECO3h30m50cel",
+        "electrodomésticos de alto consumo eléctrico como lavadoras,lavavajillas,secadoras etc\\.": "WMAEGOKOPower1h40cel1000rpm",
+        "lavavajillas  con programas ECO de 3 horas o más": "DWBOSCHECO3h30m50cel",
         "coches electricos \\(8 horas de carga\\)": "continuous8h",
         "coches electricos \\(6 horas de carga\\)": "continuous6h",
     }

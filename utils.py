@@ -16,7 +16,7 @@ def wake_up_on_time(_hour: int, _minute: int, timezone: pytz.timezone):
             hour=_hour, minute=_minute, second=0, microsecond=0
         )
         time_to_wake_up_limit = _now.replace(
-            hour=_hour, minute=_minute + 5, second=0, microsecond=0
+            hour=_hour, minute=_minute + 1, second=0, microsecond=0
         )
         if _now > time_to_wake_up and _now < time_to_wake_up_limit:
             return
