@@ -83,9 +83,9 @@ def send_header(sender: Sender, _now: datetime):
     """
     if not sender.login():
         return
-    tomorrow = (_now + timedelta(days=1)).day
-    message = "Con los precios actualizados de la tarifa de la luz PVPC "
-    message += f"para mañana dia {tomorrow}\n"
+    tomorrow = (_now + timedelta(days=1))
+    message = "Precios actualizados de la tarifa de la luz *PVPC* "
+    message += f"para mañana día {tomorrow.day}\n"
     sender.send_message(message)
 
 
@@ -146,26 +146,32 @@ def send_best_results(
 
     if not sender.login():
         return
-    message = f"Los mejores horarios para programar {_device}:"
+      
+    message = f"Las horas más barata por  __franja horaria__ para conectar {_device }  son:"
+    if "coches"  in _device:
+        message = f"La hora más económica para inciciar carga de  {_device }  son:"
+        
 
     icons = ["🏆", "🥇", "🥈", "🥉"]
 
     final_results = []
-    for i, result in enumerate(best_results):
-        final_results.append((icons[i], part_of_the_day(result[0]), result[0],))
+    if "coches" in _device:
+            final_results.append(("", part_of_the_day(best_results[0][0]), best_results[0][0],))
+    else:
+        for i, result in enumerate(best_results):
+            final_results.append((icons[i], part_of_the_day(result[0]), result[0],))
+
 
     for result in final_results:
-        message += f"\nDe {result[1]}: "
+        message += f"\nDe __{result[1]}__ : "
         message += f"{result[0]}"
-        message += f"a las {result[2].strftime('%H:%M')}h"
+        message += f"a las *{result[2].strftime('%H:%M')}*h"
         if result[2].day == _now.day:
             message += " de hoy "
-        else:
-            message += " de mañana "
-
-        price = ree_prices[result[2]]
-        price = price.replace(".", ",")
-        message += f" a {price}"
+        if "electrodomésticos" in _device:
+            price = ree_prices[result[2]]
+            price = price.replace(".", ",")
+            message += f" a {price} €/kWh"
 
     sender.send_message(message)
 
@@ -179,7 +185,7 @@ def send_worst_results(
     if not sender.login():
         return
     message = (
-        "Los peores horarios en los que hay que evitar un consumo alto de energia:\n"
+        "Las horas más caras en los que hay que evitar  un consumo alto de energía son:\n"
     )
 
     icons = ["⛔️", "❌", "❗️", "👎"]
@@ -189,15 +195,13 @@ def send_worst_results(
         final_results.append((icons[i], result[0]))
 
     for result in final_results:
-        message += result[0]
-        message += " a las " + result[1].strftime("%H:%M") + "h"
+       # message += result[0]
+        message += " a las  ~" + result[1].strftime("%H:%M") + "~h"
         if result[1].day == _now.day:
             message += " de hoy"
-        else:
-            message += " de mañana"
         price = ree_prices[result[1]]
         price = price.replace(".", ",")
-        message += f" a {price}\n"
+        message += f" a {price} €/kWh\n"
 
     sender.send_message(message)
 
@@ -214,6 +218,8 @@ def main(senders: List[Sender], programs: dict, _now: datetime):
             worst_results = calculate_worst_results(ree_prices, 4)
             for sender in senders:
                 send_header(sender, _now)
+            for sender in senders:
+                send_worst_results(sender, worst_results, ree_prices, _now)
             for description, name in programs.items():
                 results = analyze(ree_prices, name)
                 logging.info("results:%s", results)
@@ -222,9 +228,8 @@ def main(senders: List[Sender], programs: dict, _now: datetime):
                     send_best_results(
                         sender, description, best_results, ree_prices, _now
                     )
-                time.sleep(5)
-            for sender in senders:
-                send_worst_results(sender, worst_results, ree_prices, _now)
+                time.sleep(2)
+           
             time.sleep(5)
 
             return
@@ -242,8 +247,10 @@ if __name__ == "__main__":
     # }
 
     PROGRAMS = {
-        "lavadora o lavavajillas": "WMAEGOKOPower1h40cel1000rpm",
-        "lavavajillas programa largo ECO 3h": "DWBOSCHECO3h30m50cel",
+        "electrodomésticos de alto consumo eléctrico \\(lavadoras,lavavajillas,secadoras etc\\.\\)": "WMAEGOKOPower1h40cel1000rpm",
+        "lavavajillas con programa ECO de 3 horas": "DWBOSCHECO3h30m50cel",
+        "coches electricos \\(8 horas de carga\\)": "continuous8h",
+        "coches electricos \\(6 horas de carga\\)": "continuous6h",
     }
 
     TZ = pytz.timezone("Europe/Madrid")
@@ -280,7 +287,7 @@ if __name__ == "__main__":
 
     telegram = Telegram(TelegramPrivate.bot_api_key, TelegramPrivate.channel_id)
 
-    telegram.send_message("Start scheduler")
+    #telegram.send_message("Start scheduler")
 
     SENDERS = [telegram]
 
