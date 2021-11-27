@@ -49,32 +49,6 @@ def analyze(ree_prices: dict, name: str):
     return results
 
 
-def send_results_old(
-    sender: Sender,
-    destination_id: str,
-    _device: str,
-    _results: list,
-    number: int,
-    _now: datetime,
-):
-    """
-    TODO
-    """
-    message = f"Mejores horarios para {_device}:\r\n"
-    option = 1
-    for _datetime, _price in _results[:number]:
-        str_time = _datetime.strftime("%H:%M")
-        if _datetime.day == _now.day:
-            message += f"{option}. Hoy  a las {str_time}h\r\n"
-        else:
-            message += f"{option}. Mañana a las {str_time}h\r\n"
-
-        option += 1
-
-    logging.info("message:%s", message)
-
-    if sender.login():
-        sender.send_message(message, destination_id)
 
 
 def send_header(sender: Sender, _now: datetime):
@@ -83,13 +57,23 @@ def send_header(sender: Sender, _now: datetime):
     """
     if not sender.login():
         return
+    today = (_now + timedelta(hours=1))
     tomorrow = (_now + timedelta(days=1))
-    message = "Precios actualizados de la *tarifa de la luz PVPC* "
-    message += f"para mañana *día {tomorrow.day}*\n"
+    message = "Ya tenemos los precios de tarifa de luz *PVPC* "
+    message += f"desde las {today.hour}h de hoy hasta las 23h de mañana *día {tomorrow.day}*\n"
     sender.send_message(message)
 
+def send_message(sender: Sender, message: str):
+    """
+    TODO
+    """
+    if not sender.login():
+        return
 
-def calculate_best_results(_device: str, _results: list, ree_prices: dict):
+    sender.send_message("\n" + message + "\n")
+
+
+def calculate_best_results_by_slot(_device: str, _results: list, ree_prices: dict):
     """
     TODO
     """
@@ -136,8 +120,18 @@ def calculate_worst_results(ree_prices: dict, number: int):
     worst_results = worst_results[:number]
     return worst_results
 
+def calculate_best_results(ree_prices: dict, number: int):
+    """
+    TODO
+    """
+    prices = {key: float(value) for key, value in ree_prices.items()}
+    worst_results = list(prices.items())
+    worst_results.sort(key=lambda item: item[1])
+    worst_results = worst_results[:number]
+    return worst_results
 
-def send_best_results(
+
+def send_best_results_by_slots(
     sender: Sender, _device: str, best_results: list, ree_prices: dict, _now: datetime
 ):
     """
@@ -169,7 +163,7 @@ def send_best_results(
         message += f"a las *{result[2].strftime('%H:%M')}*h"
         if result[2].day == _now.day:
             message += " de hoy "
-        if "electrodomésticos" in _device:
+        if "2h" in _device:
             price = ree_prices[result[2]]
             price = price.replace(".", ",")
             message += f" a {price} €/kWh"
@@ -178,7 +172,7 @@ def send_best_results(
 
 
 def send_worst_results(
-    sender: Sender, worst_results: list, ree_prices: dict, _now: datetime
+    sender: Sender, worst_results: list, ree_prices: dict, _now: datetime, number: int
 ):
     """
     TODO
@@ -186,10 +180,10 @@ def send_worst_results(
     if not sender.login():
         return
     message = (
-        "Las horas *más caras* en los que hay que evitar  un consumo alto de energía son:\n"
+        f"Las {number} horas *más caras* son:\n"
     )
 
-    icons = ["⛔️", "❌", "❗️", "👎","👎","👎"]
+    icons = ["⛔️", "❌", "❗️", "👎","👎","👎","👎","👎"]
 
     final_results = []
     for i, result in enumerate(worst_results):
@@ -207,7 +201,37 @@ def send_worst_results(
     sender.send_message(message)
 
 
-def main(senders: List[Sender], programs: dict, _now: datetime):
+def send_best_results(
+    sender: Sender, worst_results: list, ree_prices: dict, _now: datetime, number: int
+):
+    """
+    TODO
+    """
+    if not sender.login():
+        return
+    message = (
+        f"Las {number} horas *más baratas* son:\n"
+    )
+
+    icons = ["🏆", "🥇", "🥈", "🥉","👌","👍","👍","👍"]
+
+    final_results = []
+    for i, result in enumerate(worst_results):
+        final_results.append((icons[i], result[0]))
+
+    for result in final_results:
+        message += result[0]
+        message += " a las *" + result[1].strftime("%H:%M") + "*h"
+        if result[1].day == _now.day:
+            message += " de hoy"
+        price = ree_prices[result[1]]
+        price = price.replace(".", ",")
+        message += f" a {price} €/kWh\n"
+
+    sender.send_message(message)
+
+
+def main(senders: List[Sender], programs: dict, _now: datetime,number:int):
     """
     TODO
     """
@@ -216,23 +240,30 @@ def main(senders: List[Sender], programs: dict, _now: datetime):
         ree_prices = ree.kwh_price(_now + timedelta(hours=1))
         if ree_prices:
             logging.info("prices:%s", ree_prices)
-            worst_results = calculate_worst_results(ree_prices, 6)
+            worst_results = calculate_worst_results(ree_prices, number)
+            best_results = calculate_best_results(ree_prices, number)
             for sender in senders:
                 send_header(sender, _now)
-           
+                time.sleep(2)
+                send_best_results(sender, best_results, ree_prices, _now, number)
+                time.sleep(2)
+                send_worst_results(sender, worst_results, ree_prices, _now, number)
+                time.sleep(2)
+          
+
             for description, name in programs.items():
                 results = analyze(ree_prices, name)
                 logging.info("results:%s", results)
-                best_results = calculate_best_results(name, results, ree_prices)
+                best_results_by_slots = calculate_best_results_by_slot(name, results, ree_prices)
                 for sender in senders:
-                    send_best_results(
-                        sender, description, best_results, ree_prices, _now
+                    send_best_results_by_slots(
+                        sender, description, best_results_by_slots, ree_prices, _now
                     )
                 time.sleep(2)
            
             time.sleep(5)
-            for sender in senders:
-                send_worst_results(sender, worst_results, ree_prices, _now)
+           
+                
 
             return
         time.sleep(300)
@@ -249,15 +280,15 @@ if __name__ == "__main__":
     # }
 
     PROGRAMS = {
-        "electrodomésticos de alto consumo eléctrico como lavadoras,lavavajillas,secadoras etc\\.": "WMAEGOKOPower1h40cel1000rpm",
-        "lavavajillas  con programas ECO de 3 horas o más": "DWBOSCHECO3h30m50cel",
-        "coches electricos \\(8 horas de carga\\)": "continuous8h",
-        "coches electricos \\(6 horas de carga\\)": "continuous6h",
+        "electrodomésticos con programas cortos o medios hasta 2h\\": "WMAEGOKOPower1h40cel1000rpm",
+        "electrodomésticos  con programas largos de 3h o mas ": "DWBOSCHECO3h30m50cel",
+        "coches eléctricos \\(8 horas de carga\\)": "continuous8h",
     }
 
     TZ = pytz.timezone("Europe/Madrid")
     HOUR = 20
     MINUTE = 30
+    NUMBER = 6
 
     logging.basicConfig(
         format="%(asctime)s %(levelname)s %(module)s %(funcName)s %(message)s",
@@ -295,5 +326,5 @@ if __name__ == "__main__":
 
     while True:  # run as a service always running
         wake_up_on_time(HOUR, MINUTE, TZ)
-        main(SENDERS, PROGRAMS, datetime.now(tz=TZ))
+        main(SENDERS, PROGRAMS, datetime.now(tz=TZ),NUMBER)
         time.sleep(3600)
