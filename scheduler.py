@@ -49,19 +49,20 @@ def analyze(ree_prices: dict, name: str):
     return results
 
 
-
-
 def send_header(sender: Sender, _now: datetime):
     """
     TODO
     """
     if not sender.login():
         return
-    today = (_now + timedelta(hours=1))
-    tomorrow = (_now + timedelta(days=1))
+    today = _now + timedelta(hours=1)
+    tomorrow = _now + timedelta(days=1)
     message = "Ya tenemos los precios de tarifa de luz *PVPC* "
-    message += f"desde las {today.hour}h de hoy hasta las 23h de mañana *día {tomorrow.day}*\n"
+    message += (
+        f"desde las {today.hour}h de hoy hasta las 23h de mañana *día {tomorrow.day}*\n"
+    )
     sender.send_message(message)
+
 
 def send_message(sender: Sender, message: str):
     """
@@ -120,6 +121,7 @@ def calculate_worst_results(ree_prices: dict, number: int):
     worst_results = worst_results[:number]
     return worst_results
 
+
 def calculate_best_results(ree_prices: dict, number: int):
     """
     TODO
@@ -140,11 +142,10 @@ def send_best_results_by_slots(
 
     if not sender.login():
         return
-      
+
     message = f"Las horas *más baratas* por  __franja horaria__ para conectar {_device }  son:"
-    if "coches"  in _device:
+    if "coches" in _device:
         message = f"Las horas *más baratas* por __franja horaria__ para inciciar carga de  {_device }  son:"
-        
 
     icons = ["🏆", "🥇", "🥈", "🥉"]
 
@@ -155,7 +156,6 @@ def send_best_results_by_slots(
     else:
         for i, result in enumerate(best_results):
             final_results.append((icons[i], part_of_the_day(result[0]), result[0],))
-
 
     for result in final_results:
         message += f"\nDe __{result[1]}__ : "
@@ -179,11 +179,9 @@ def send_worst_results(
     """
     if not sender.login():
         return
-    message = (
-        f"Las {number} horas *más caras* son:\n"
-    )
+    message = f"Las {number} horas *más caras* son:\n"
 
-    icons = ["⛔️", "❌", "❗️", "👎","👎","👎","👎","👎"]
+    icons = ["⛔️", "❌", "❗️", "👎", "👎", "👎", "👎", "👎"]
 
     final_results = []
     for i, result in enumerate(worst_results):
@@ -209,11 +207,9 @@ def send_best_results(
     """
     if not sender.login():
         return
-    message = (
-        f"Las {number} horas *más baratas* son:\n"
-    )
+    message = f"Las {number} horas *más baratas* son:\n"
 
-    icons = ["🏆", "🥇", "🥈", "🥉","👌","👍","👍","👍"]
+    icons = ["🏆", "🥇", "🥈", "🥉", "👌", "👍", "👍", "👍"]
 
     final_results = []
     for i, result in enumerate(worst_results):
@@ -231,7 +227,7 @@ def send_best_results(
     sender.send_message(message)
 
 
-def main(senders: List[Sender], programs: dict, _now: datetime,number:int):
+def main(senders: List[Sender], programs: dict, _now: datetime, number: int):
     """
     TODO
     """
@@ -249,21 +245,19 @@ def main(senders: List[Sender], programs: dict, _now: datetime,number:int):
                 time.sleep(2)
                 send_worst_results(sender, worst_results, ree_prices, _now, number)
                 time.sleep(2)
-          
-
             for description, name in programs.items():
                 results = analyze(ree_prices, name)
                 logging.info("results:%s", results)
-                best_results_by_slots = calculate_best_results_by_slot(name, results, ree_prices)
+                best_results_by_slots = calculate_best_results_by_slot(
+                    name, results, ree_prices
+                )
                 for sender in senders:
                     send_best_results_by_slots(
                         sender, description, best_results_by_slots, ree_prices, _now
                     )
                 time.sleep(2)
-           
+
             time.sleep(5)
-           
-                
 
             return
         time.sleep(300)
@@ -320,11 +314,12 @@ if __name__ == "__main__":
 
     telegram = Telegram(TelegramPrivate.bot_api_key, TelegramPrivate.channel_id)
 
-    #telegram.send_message("Start scheduler")
+    # telegram.send_message("Start scheduler")
 
     SENDERS = [telegram]
 
     while True:  # run as a service always running
         wake_up_on_time(HOUR, MINUTE, TZ)
-        main(SENDERS, PROGRAMS, datetime.now(tz=TZ),NUMBER)
+        main(SENDERS, PROGRAMS, datetime.now(tz=TZ), NUMBER)
+
         time.sleep(3600)

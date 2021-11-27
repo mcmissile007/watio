@@ -3,8 +3,6 @@ TODO
 """
 import logging
 import os
-import getopt
-import sys
 import time
 from datetime import datetime
 from datetime import timedelta
@@ -14,7 +12,6 @@ from data_api_ree import DataAPIRee
 from matrix import Matrix
 from private.config import ZWayPrivate, MatrixPrivate
 from zway import ZWayConf, ZWayvDevAPI
-from utils import wake_up_on_time
 from utils import wake_up_o_clock
 
 
@@ -115,36 +112,15 @@ def main(time_zone: pytz.timezone):
 
 if __name__ == "__main__":
 
-    HOUR = 20
-    MINUTE = 40
-
     logging.basicConfig(
         format="%(asctime)s %(levelname)s %(module)s %(funcName)s %(message)s",
         level=os.environ.get("LOGLEVEL", "INFO"),
     )
     logging.info("start optimizer")
 
-    argv = sys.argv[1:]
-    try:
-        opts, args = getopt.getopt(argv, "h:m:", longopts=["hour=", "minute="])
-
-    except getopt.GetoptError as error:
-        logging.error("%s", error)
-        sys.exit(2)
-
-    for opt in opts:
-        if opt[0] == "-h" or opt[0] == "--hour":
-            HOUR = int(opt[1])
-        if opt[0] == "-m" or opt[0] == "--minute":
-            MINUTE = int(opt[1])
-
     TZ = pytz.timezone("Europe/Madrid")
 
     while True:  # run as a service always running
         time.sleep(60)
-        logging.info("Waiting to have new prices from REE")
-        send_message("Optimizer: Waiting to have new prices from REE")
-        wake_up_on_time(HOUR, MINUTE, TZ)
         main(TZ)
-        time.sleep(60)
     logging.info("end optimizer")
