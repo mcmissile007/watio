@@ -13,6 +13,7 @@ from matrix import Matrix
 from private.config import ZWayPrivate, MatrixPrivate
 from zway import ZWayConf, ZWayvDevAPI
 from utils import wake_up_o_clock
+from utils import is_evening
 
 
 def send_message(message):
@@ -48,6 +49,12 @@ def better_times_slot(ree_prices: dict, number: int):
 
     prices = {key: float(value) for key, value in ree_prices.items()}
     prices = list(prices.items())
+   
+
+    prices = [item for item in prices if not is_evening(item[0])]
+
+    logging.info("remove evenings by user requirement, prices:%s", prices)
+
     prices.sort(key=lambda x: x[0])  # sort by datetime
     logging.info("prices:%s", prices)
 
