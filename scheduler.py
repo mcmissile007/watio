@@ -143,22 +143,23 @@ def send_best_results_by_slots(
     if not sender.login():
         return
 
-    message = f"Las horas *más baratas* por  __franja horaria__ para conectar {_device }  son:"
+    message = f"Las horas *más baratas* por  __franja horaria__ para conectar {_device }  son: "
     if "coches" in _device:
-        message = f"Las horas *más baratas* por __franja horaria__ para inciciar carga de  {_device }  son:"
+        message = f"La hora *más barata* para inciciar carga de  {_device }  es: "
 
     icons = ["🏆", "🥇", "🥈", "🥉"]
 
     final_results = []
     if "coches" in _device:
-        for i, result in enumerate(best_results[:2]):
+        for i, result in enumerate(best_results[:1]):
             final_results.append((icons[i], part_of_the_day(result[0]), result[0],))
     else:
         for i, result in enumerate(best_results):
             final_results.append((icons[i], part_of_the_day(result[0]), result[0],))
 
     for result in final_results:
-        message += f"\nDe __{result[1]}__ : "
+        if "coches" not in _device:
+            message += f"\nDe __{result[1]}__ : "
         message += f"{result[0]}"
         message += f"a las *{result[2].strftime('%H:%M')}*h"
         if result[2].day == _now.day:
@@ -235,9 +236,11 @@ def main(senders: List[Sender], programs: dict, _now: datetime, number: int):
         ree = DataAPIRee()
         ree_prices = ree.kwh_price(_now + timedelta(hours=1))
         if ree_prices:
-            logging.info("prices:%s", ree_prices)
+            logger.info("prices:%s", ree_prices)
             worst_results = calculate_worst_results(ree_prices, number)
+            logger.info("worst_results:%s", worst_results)
             best_results = calculate_best_results(ree_prices, number)
+            logger.info("best_results:%s", best_results)
             for sender in senders:
                 send_header(sender, _now)
                 time.sleep(2)
@@ -247,7 +250,7 @@ def main(senders: List[Sender], programs: dict, _now: datetime, number: int):
                 time.sleep(2)
             for description, name in programs.items():
                 results = analyze(ree_prices, name)
-                logging.info("results:%s", results)
+                logger.info("results:%s", results)
                 best_results_by_slots = calculate_best_results_by_slot(
                     name, results, ree_prices
                 )
@@ -284,18 +287,23 @@ if __name__ == "__main__":
     MINUTE = 30
     NUMBER = 6
 
-    logging.basicConfig(
-        format="%(asctime)s %(levelname)s %(module)s %(funcName)s %(message)s",
-        level=os.environ.get("LOGLEVEL", "INFO"),
-    )
-    logging.info("start scheduler")
+    logger = logging.getLogger(__name__)  
+  
+   
+    logger.setLevel(logging.DEBUG)
+    _datetime = datetime.now().strftime("_%Y-%m-%d_%H:%m_")
+    file_handler = logging.FileHandler(f"logs/scheduler{_datetime}.log")
+    formatter    = logging.Formatter('%(asctime)s : %(levelname)s  : %(funcName)s: %(name)s : %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    logger.info('start scheduler')
 
     argv = sys.argv[1:]
     try:
         opts, args = getopt.getopt(argv, "h:m:", longopts=["hour=", "minute="])
 
     except getopt.GetoptError as error:
-        logging.error("%s", error)
+        logger.error("%s", error)
         sys.exit(2)
 
     for opt in opts:

@@ -4,6 +4,7 @@ TODO
 import logging
 import os
 import time
+from datetime import datetime
 import pytz
 from zway import ZWayConf, ZWayvDevAPI
 from private.config import ZWayPrivate, MatrixPrivate
@@ -44,18 +45,18 @@ def main(
     zway.sensor_update(meter)
     time.sleep(interval)
     info = zway.sensor_meter_info(meter, time_zone)
-    logging.info("info:%s", info)
+    logger.info("info:%s", info)
     if "level" not in info:
-        logging.error("level not  in info")
+        logger.error("level not  in info")
         return
     if info["level"] > upper_limit:
         message = f"exceeded maximum power:{info['level']}w"
-        logging.info("exceeded maximun power:%d w", info["level"])
+        logger.info("exceeded maximun power:%d w", info["level"])
         send_notification(message)
         for switch in switches:
             zway.switch_off(switch)
             message = f"switch_off:{switch}"
-            logging.info("switch_off:%s", switch)
+            logger.info("switch_off:%s", switch)
             send_notification(message)
             time.sleep(interval)
         while True:
@@ -64,16 +65,16 @@ def main(
             time.sleep(interval)
             info = zway.sensor_meter_info(meter, time_zone)
             if "level" not in info:
-                logging.error("level not  in info")
+                logger.error("level not  in info")
                 continue
             if info["level"] < lower_limit:
                 message = f"now is safe to turn on devices:{info['level']}w"
-                logging.info("now is safe to turn on devices:%d w", info["level"])
+                logger.info("now is safe to turn on devices:%d w", info["level"])
                 send_notification(message)
                 for switch in switches:
                     zway.switch_on(switch)
                     message = f"switch_on:{switch}"
-                    logging.info("switch_on:%s", switch)
+                    logger.info("switch_on:%s", switch)
                     send_notification(message)
                     time.sleep(INTERVAL)
                 return
@@ -81,12 +82,16 @@ def main(
 
 if __name__ == "__main__":
 
-    logging.basicConfig(
-        format="%(asctime)s %(levelname)s %(module)s %(funcName)s %(message)s",
-        level=os.environ.get("LOGLEVEL", "INFO"),
-    )
 
-    logging.info("start limiter")
+
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.DEBUG)
+    _datetime = datetime.now().strftime("_%Y-%m-%d_%H:%m_")
+    file_handler = logging.FileHandler(f"logs/limiter{_datetime}.log")
+    formatter    = logging.Formatter('%(asctime)s : %(levelname)s  : %(funcName)s: %(name)s : %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    logger.info('start limiter')
 
     TZ = pytz.timezone("Europe/Madrid")
     INTERVAL = 10
@@ -100,4 +105,3 @@ if __name__ == "__main__":
         main(METER, SWITCHES, UPPER_LIMIT, LOWER_LIMIT, SLEEP, INTERVAL, TZ)
         time.sleep(INTERVAL)
 
-    logging.info("end limiter")
