@@ -53,10 +53,10 @@ def better_times_slot(ree_prices: dict, number: int):
 
     prices = [item for item in prices if not is_evening(item[0])]
 
-    logging.info("remove evenings by user requirement, prices:%s", prices)
+    logger.info("remove evenings by user requirement, prices:%s", prices)
 
     prices.sort(key=lambda x: x[0])  # sort by datetime
-    logging.info("prices:%s", prices)
+    logger.info("prices:%s", prices)
 
     prices_slot1 = prices[: int(len(prices) / 2)]
     prices_slot2 = prices[int(len(prices) / 2) :]
@@ -67,8 +67,8 @@ def better_times_slot(ree_prices: dict, number: int):
     prices_slot2.sort(key=lambda x: x[1])  # sort by price
     prices_slot2 = [item[0] for item in prices_slot2]
 
-    logging.info("prices_slot1:%s", prices_slot1)
-    logging.info("prices_slot2:%s", prices_slot2)
+    logger.info("prices_slot1:%s", prices_slot1)
+    logger.info("prices_slot2:%s", prices_slot2)
 
     return prices_slot1[:number] + prices_slot2[:number]
 
@@ -91,43 +91,50 @@ def main(time_zone: pytz.timezone):
 
     ree = DataAPIRee()
     ree_prices = ree.kwh_price(datetime.now(tz=time_zone) + timedelta(hours=1))
-    logging.info(ree_prices)
+    logger.info(ree_prices)
     if ree_prices:
         switch_on_times = better_times_slot(ree_prices, 4)
-        logging.info("switch_on_times:%s", switch_on_times)
+        logger.info("switch_on_times:%s", switch_on_times)
         zway = ZWayvDevAPI(
             ZWayConf.url, ZWayConf.port, ZWayPrivate.user, ZWayPrivate.password
         )
         heater = ZWayConf.water_heater
         while True:
             now = wake_up_o_clock(time_zone)
-            logging.info("now:%s", now)
+            logger.info("now:%s", now)
             if now in switch_on_times:
                 zway.switch_on(heater)
-                logging.info("Switch on heater")
+                logger.info("Switch on heater")
                 send_message(f"Optimizer: Switch on heater:{now}")
             else:
                 zway.switch_off(heater)
-                logging.info("Switch off heater:%s", now)
+                logger.info("Switch off heater:%s", now)
                 send_message(f"Optimizer: Switch off heater:{now}")
             if now.hour == 20:
-                logging.info("it is time to start again with new prices")
+                logger.info("it is time to start again with new prices")
                 send_message(f"Optimizer: start again with new prices:{now}")
+                time.sleep(35*60)
                 return
             time.sleep(60)
 
 
 if __name__ == "__main__":
 
-    logging.basicConfig(
-        format="%(asctime)s %(levelname)s %(module)s %(funcName)s %(message)s",
-        level=os.environ.get("LOGLEVEL", "INFO"),
-    )
-    logging.info("start optimizer")
+    
+    logger = logging.getLogger(__name__)  
+  
+   
+    logger.setLevel(logging.DEBUG)
+    _datetime = datetime.now().strftime("_%Y-%m-%d_%H:%m_")
+    file_handler = logging.FileHandler(f"logs/optimizer{_datetime}.log")
+    formatter    = logging.Formatter('%(asctime)s : %(levelname)s  : %(funcName)s: %(name)s : %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+    logger.info('start optimizer')
 
     TZ = pytz.timezone("Europe/Madrid")
 
     while True:  # run as a service always running
-        time.sleep(60)
         main(TZ)
-    logging.info("end optimizer")
+        time.sleep(60)
+  
