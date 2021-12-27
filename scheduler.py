@@ -235,7 +235,7 @@ def main(senders: List[Sender], programs: dict, _now: datetime, number: int):
     while True:
         ree = DataAPIRee()
         ree_prices = ree.kwh_price(_now + timedelta(hours=1))
-        if ree_prices:
+        if ree_prices and len(ree_prices) > 23:
             logger.info("prices:%s", ree_prices)
             worst_results = calculate_worst_results(ree_prices, number)
             logger.info("worst_results:%s", worst_results)
