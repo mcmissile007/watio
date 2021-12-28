@@ -92,7 +92,7 @@ def main(time_zone: pytz.timezone):
     ree = DataAPIRee()
     ree_prices = ree.kwh_price(datetime.now(tz=time_zone) + timedelta(hours=1))
     logger.info(ree_prices)
-    if ree_prices:
+    if ree_prices and len(ree_prices) > 16:
         switch_on_times = better_times_slot(ree_prices, 4)
         logger.info("switch_on_times:%s", switch_on_times)
         zway = ZWayvDevAPI(
@@ -136,5 +136,5 @@ if __name__ == "__main__":
 
     while True:  # run as a service always running
         main(TZ)
-        time.sleep(60)
+        time.sleep(300)
   
