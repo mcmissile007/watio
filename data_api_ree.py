@@ -74,11 +74,13 @@ class DataAPIRee:
         if geo not in self.geo_ids:
             return {}
 
-        query = f"?start_date={start_date}&end_date={end_date}\
-                &time_trunc={time_trunc}&geo_ids={self.geo_ids[geo]}"
+        query = f"?start_date={start_date}&end_date={end_date}&time_trunc={time_trunc}&geo_ids={self.geo_ids[geo]}"
         url = f"{self.base_url}/{command}/{query}"
+        print(f"url {url}")
+        data = HTTPSRequest().get_request(url)
+        print(f"data {data}")
         kwh_prices_response = DataAPIRee.__parse_kwh_price_response(
-            HTTPSRequest().get_request(url)
+            data
         )
         return self.__parse_kwh_price_values(kwh_prices_response)
 
